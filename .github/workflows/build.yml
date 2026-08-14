@@ -25,31 +25,28 @@ jobs:
       - name: Ensure Android platform exists
         run: flutter create . --platforms=android --no-pub
 
-      - name: Upgrade Gradle and AGP for Modern Compatibility
+      - name: Fix Kotlin Version and Compile Conflict
         run: |
           python3 -c '
-          import os, re, glob
+          import os, glob, re
 
-          # 1. Update Gradle wrapper to version 8.0
-          gw_path = "android/gradle/wrapper/gradle-wrapper.properties"
-          if os.path.exists(gw_path):
-              with open(gw_path, "r", encoding="utf-8") as f:
+          # Fix kotlin version in all build.gradle files
+          for path in glob.glob("**/build.gradle*", recursive=True):
+              with open(path, "r", encoding="utf-8", errors="ignore") as f:
                   content = f.read()
-              content = re.sub(r"distributionUrl=.*", "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.0-bin.zip", content)
-              with open(gw_path, "w", encoding="utf-8") as f:
+              
+              content = re.sub(r"kotlin-gradle-plugin:[\d\.]+", "kotlin-gradle-plugin:1.8.22", content)
+              content = re.sub(r"org\.jetbrains\.kotlin:kotlin-gradle-plugin:[\d\.]+", "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.22", content)
+              
+              with open(path, "w", encoding="utf-8") as f:
                   f.write(content)
 
-          # 2. Update compileSdk and targetSdk in build.gradle
-          for path in glob.glob("**/build.gradle*", recursive=True):
-              if "android/app" in path:
-                  with open(path, "r", encoding="utf-8") as f:
-                      g_content = f.read()
-                  g_content = re.sub(r"compileSdk\s+\d+", "compileSdk 34", g_content)
-                  g_content = re.sub(r"targetSdk\s+\d+", "targetSdk 34", g_content)
-                  g_content = re.sub(r"compileSdkVersion\s+[\w\.]+", "compileSdkVersion 34", g_content)
-                  g_content = re.sub(r"targetSdkVersion\s+[\w\.]+", "targetSdkVersion 34", g_content)
-                  with open(path, "w", encoding="utf-8") as f:
-                      f.write(g_content)
+          # Clean any misplaced kotlin files causing compileKotlin error in gradle dir
+          for path in glob.glob("gradle/**/*.kt", recursive=True):
+              try:
+                  os.remove(path)
+              except:
+                  pass
           '
 
       - name: Clean and Get dependencies
