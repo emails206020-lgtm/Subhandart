@@ -22,21 +22,22 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Clean notification code from project
+      - name: Update compileSdk to 34
         run: |
           python3 -c '
           import glob
-          for path in glob.glob("lib/**/*.dart", recursive=True):
-              with open(path, "r", encoding="utf-8", errors="ignore") as f:
-                  lines = f.readlines()
-              new_lines = [l for l in lines if "flutter_local_notifications" not in l and "flutterLocalNotificationsPlugin" not in l]
-              if len(new_lines) != len(lines):
-                  with open(path, "w", encoding="utf-8") as f:
-                      f.writelines(new_lines)
+          for path in glob.glob("android/app/build.gradle", recursive=True):
+              with open(path, "r", encoding="utf-8") as f:
+                  content = f.read()
+              content = content.replace("compileSdkVersion flutter.compileSdkVersion", "compileSdkVersion 34")
+              content = content.replace("compileSdk flutter.compileSdkVersion", "compileSdk 34")
+              if "compileSdk" not in content:
+                  content = content.replace("android {", "android {\n    compileSdk 34")
+              else:
+                  content = content.replace("compileSdk 33", "compileSdk 34")
+              with open(path, "w", encoding="utf-8") as f:
+                  f.write(content)
           '
-
-      - name: Remove package from pubspec
-        run: flutter pub remove flutter_local_notifications || true
 
       - name: Get dependencies
         run: flutter pub get
