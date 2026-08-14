@@ -22,7 +22,20 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Remove notifications package
+      - name: Clean notification code from project
+        run: |
+          python3 -c '
+          import glob
+          for path in glob.glob("lib/**/*.dart", recursive=True):
+              with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                  lines = f.readlines()
+              new_lines = [l for l in lines if "flutter_local_notifications" not in l and "flutterLocalNotificationsPlugin" not in l]
+              if len(new_lines) != len(lines):
+                  with open(path, "w", encoding="utf-8") as f:
+                      f.writelines(new_lines)
+          '
+
+      - name: Remove package from pubspec
         run: flutter pub remove flutter_local_notifications || true
 
       - name: Get dependencies
