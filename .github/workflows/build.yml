@@ -22,21 +22,31 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Update compileSdk to 34
+      - name: Fix dependencies and compileSdk
         run: |
           python3 -c '
-          import glob
-          for path in glob.glob("android/app/build.gradle", recursive=True):
-              with open(path, "r", encoding="utf-8") as f:
-                  content = f.read()
-              content = content.replace("compileSdkVersion flutter.compileSdkVersion", "compileSdkVersion 34")
-              content = content.replace("compileSdk flutter.compileSdkVersion", "compileSdk 34")
-              if "compileSdk" not in content:
-                  content = content.replace("android {", "android {\n    compileSdk 34")
-              else:
-                  content = content.replace("compileSdk 33", "compileSdk 34")
-              with open(path, "w", encoding="utf-8") as f:
-                  f.write(content)
+          import re
+
+          with open("pubspec.yaml", "r", encoding="utf-8") as f:
+              content = f.read()
+          
+          if "flutter_local_notifications:" in content:
+              content = re.sub(r"flutter_local_notifications:\s*\^?[\d\.]+", "flutter_local_notifications: ^17.2.4", content)
+          
+          with open("pubspec.yaml", "w", encoding="utf-8") as f:
+              f.write(content)
+
+          gradle_path = "android/app/build.gradle"
+          with open(gradle_path, "r", encoding="utf-8") as f:
+              g_content = f.read()
+          
+          g_content = re.sub(r"compileSdk\s+\d+", "compileSdk 34", g_content)
+          g_content = re.sub(r"compileSdkVersion\s+[\w\.]+", "compileSdkVersion 34", g_content)
+          if "compileSdk 34" not in g_content and "compileSdkVersion 34" not in g_content:
+              g_content = g_content.replace("android {", "android {\n    compileSdk 34")
+
+          with open(gradle_path, "w", encoding="utf-8") as f:
+              f.write(g_content)
           '
 
       - name: Get dependencies
