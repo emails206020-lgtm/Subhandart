@@ -21,38 +21,29 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          cache: false
 
-      - name: Ensure Android platform exists
-        run: flutter create . --platforms=android --no-pub
-
-      - name: Fix Kotlin Version and Compile Conflict
+      - name: Remove notification package entirely
         run: |
           python3 -c '
-          import os, glob, re
+          import os
 
-          # Fix kotlin version in all build.gradle files
-          for path in glob.glob("**/build.gradle*", recursive=True):
-              with open(path, "r", encoding="utf-8", errors="ignore") as f:
-                  content = f.read()
-              
-              content = re.sub(r"kotlin-gradle-plugin:[\d\.]+", "kotlin-gradle-plugin:1.8.22", content)
-              content = re.sub(r"org\.jetbrains\.kotlin:kotlin-gradle-plugin:[\d\.]+", "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.22", content)
-              
-              with open(path, "w", encoding="utf-8") as f:
-                  f.write(content)
+          # Clean pubspec.yaml
+          if os.path.exists("pubspec.yaml"):
+              with open("pubspec.yaml", "r", encoding="utf-8") as f:
+                  lines = f.readlines()
+              with open("pubspec.yaml", "w", encoding="utf-8") as f:
+                  for line in lines:
+                      if "flutter_local_notifications" not in line:
+                          f.write(line)
 
-          # Clean any misplaced kotlin files causing compileKotlin error in gradle dir
-          for path in glob.glob("gradle/**/*.kt", recursive=True):
-              try:
-                  os.remove(path)
-              except:
-                  pass
+          # Delete lock file
+          if os.path.exists("pubspec.lock"):
+              os.remove("pubspec.lock")
           '
 
-      - name: Clean and Get dependencies
-        run: |
-          flutter clean
-          flutter pub get
+      - name: Get dependencies fresh
+        run: flutter pub get --no-example
 
       - name: Build APK
         run: flutter build apk --release --no-fatal-warnings
