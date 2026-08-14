@@ -22,8 +22,8 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Get dependencies
-        run: flutter pub upgrade flutter_local_notifications
+      - name: Upgrade dependencies major versions
+        run: flutter pub upgrade --major-versions
 
       - name: Build APK
         run: flutter build apk --release --no-fatal-warnings
