@@ -22,14 +22,11 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Ensure Android folder exists
-        run: flutter create .
+      - name: Remove notifications package
+        run: flutter pub remove flutter_local_notifications || true
 
-      - name: Enable Core Library Desugaring
-        run: |
-          sed -i 's/defaultConfig {/defaultConfig {\n        multiDexEnabled true/g' android/app/build.gradle
-          sed -i 's/compileOptions {/compileOptions {\n        coreLibraryDesugaringEnabled true/g' android/app/build.gradle
-          sed -i 's/dependencies {/dependencies {\n    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.4"/g' android/app/build.gradle
+      - name: Get dependencies
+        run: flutter pub get
 
       - name: Build APK
         run: flutter build apk --release --no-fatal-warnings
