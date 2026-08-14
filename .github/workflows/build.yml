@@ -22,14 +22,43 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Clean project cache
-        run: flutter clean
+      - name: Ensure Android platform exists
+        run: flutter create . --platforms=android --no-pub
 
-      - name: Get dependencies
-        run: flutter pub get
+      - name: Upgrade Gradle and AGP for Modern Compatibility
+        run: |
+          python3 -c '
+          import os, re, glob
 
-      - name: Build APK with detailed info
-        run: flutter build apk --release --no-fatal-warnings --verbose
+          # 1. Update Gradle wrapper to version 8.0
+          gw_path = "android/gradle/wrapper/gradle-wrapper.properties"
+          if os.path.exists(gw_path):
+              with open(gw_path, "r", encoding="utf-8") as f:
+                  content = f.read()
+              content = re.sub(r"distributionUrl=.*", "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.0-bin.zip", content)
+              with open(gw_path, "w", encoding="utf-8") as f:
+                  f.write(content)
+
+          # 2. Update compileSdk and targetSdk in build.gradle
+          for path in glob.glob("**/build.gradle*", recursive=True):
+              if "android/app" in path:
+                  with open(path, "r", encoding="utf-8") as f:
+                      g_content = f.read()
+                  g_content = re.sub(r"compileSdk\s+\d+", "compileSdk 34", g_content)
+                  g_content = re.sub(r"targetSdk\s+\d+", "targetSdk 34", g_content)
+                  g_content = re.sub(r"compileSdkVersion\s+[\w\.]+", "compileSdkVersion 34", g_content)
+                  g_content = re.sub(r"targetSdkVersion\s+[\w\.]+", "targetSdkVersion 34", g_content)
+                  with open(path, "w", encoding="utf-8") as f:
+                      f.write(g_content)
+          '
+
+      - name: Clean and Get dependencies
+        run: |
+          flutter clean
+          flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release --no-fatal-warnings
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
