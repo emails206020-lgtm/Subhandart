@@ -22,8 +22,26 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Upgrade dependencies major versions
-        run: flutter pub upgrade --major-versions
+      - name: Enable Core Library Desugaring automatically
+        run: |
+          python3 -c '
+          with open("android/app/build.gradle", "r") as f:
+              c = f.read()
+          if "multiDexEnabled" not in c:
+              c = c.replace("defaultConfig {", "defaultConfig {\n        multiDexEnabled true")
+          if "coreLibraryDesugaringEnabled" not in c:
+              c = c.replace("compileOptions {", "compileOptions {\n        coreLibraryDesugaringEnabled true\n    ")
+          if "desugar_jdk_libs" not in c:
+              if "dependencies {" in c:
+                  c = c.replace("dependencies {", "dependencies {\n    coreLibraryDesugaring \"com.android.tools:desugar_jdk_libs:2.0.4\"")
+              else:
+                  c += "\ndependencies {\n    coreLibraryDesugaring \"com.android.tools:desugar_jdk_libs:2.0.4\"\n}\n"
+          with open("android/app/build.gradle", "w") as f:
+              f.write(c)
+          '
+
+      - name: Get dependencies
+        run: flutter pub get
 
       - name: Build APK
         run: flutter build apk --release --no-fatal-warnings
