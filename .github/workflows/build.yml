@@ -23,12 +23,12 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Remove notification package entirely
+      - name: Strip all notification references from Dart code
         run: |
           python3 -c '
-          import os
+          import os, glob
 
-          # Clean pubspec.yaml
+          # 1. Clean pubspec.yaml
           if os.path.exists("pubspec.yaml"):
               with open("pubspec.yaml", "r", encoding="utf-8") as f:
                   lines = f.readlines()
@@ -37,9 +37,20 @@ jobs:
                       if "flutter_local_notifications" not in line:
                           f.write(line)
 
-          # Delete lock file
+          # 2. Delete lock file
           if os.path.exists("pubspec.lock"):
               os.remove("pubspec.lock")
+
+          # 3. Strip every single line containing notification references in lib/
+          for path in glob.glob("lib/**/*.dart", recursive=True):
+              with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                  lines = f.readlines()
+              new_lines = []
+              for line in lines:
+                  if "flutter_local_notifications" not in line and "flutterLocalNotificationsPlugin" not in line and "Notification" not in line:
+                      new_lines.append(line)
+              with open(path, "w", encoding="utf-8") as f:
+                  f.writelines(new_lines)
           '
 
       - name: Get dependencies fresh
