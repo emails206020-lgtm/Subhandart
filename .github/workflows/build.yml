@@ -22,17 +22,8 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Accept Android Licenses
-        run: yes | flutter doctor --android-licenses || true
-
       - name: Get dependencies
-        run: flutter pub get
-
-      - name: Upgrade Gradle Wrapper
-        run: |
-          cd android
-          ./gradlew wrapper --gradle-version 8.0 || true
-          cd ..
+        run: flutter pub upgrade flutter_local_notifications
 
       - name: Build APK
         run: flutter build apk --release --no-fatal-warnings
